@@ -1,41 +1,56 @@
 #!/usr/bin/python3
-""" 4. MRU Caching
+"""MRU Cache Replacement Implementation Class
 """
-BaseCaching = __import__("base_caching").BaseCaching
+from threading import RLock
+
+BaseCaching = __import__('base_caching').BaseCaching
 
 
 class MRUCache(BaseCaching):
     """
-    The super method.
-    MRU we need to store recent values
+    An implementation of MRU(Most Recently Used) Cache
+
+    Attributes:
+        __keys (list): Stores cache keys from least to most accessed
+        __rlock (RLock): Lock accessed resources to prevent race condition
     """
     def __init__(self):
-        """
-        Initialize the class with the parent's init method
+        """ Instantiation method, sets instance attributes
         """
         super().__init__()
-        self.mru = []
+        self.__keys = []
+        self.__rlock = RLock()
 
     def put(self, key, item):
+        """ Add an item in the cache
         """
-        Altering the least recently used
-        """
-        if key is None or item is None:
-            pass
-        if len(self.cache_data) >= BaseCaching.MAX_ITEMS:
-            latest = self.mru[-1]
-            del self.cache_data[latest]
-            del self.mru[-1]
-            print(f'DISCARD:{latest}')
-        self.cache_data[key] = item
-        self.mru.append(key)
+        if key is not None and item is not None:
+            keyOut = self._balance(key)
+            with self.__rlock:
+                self.cache_data.update({key: item})
+            if keyOut is not None:
+                print('DISCARD: {}'.format(keyOut))
 
     def get(self, key):
+        """ Get an item by key
         """
-        Fetching the mru
+        with self.__rlock:
+            value = self.cache_data.get(key, None)
+            if key in self.__keys:
+                self._balance(key)
+        return value
+
+    def _balance(self, keyIn):
+        """ Removes the earliest item from the cache at MAX size
         """
-        if key is not None and key in self.cache_data.keys():
-            del self.mru[self.mru.index(key)]
-            self.mru.append(key)
-            return self.cache_data[key]
-        return None
+        keyOut = None
+        with self.__rlock:
+            keysLength = len(self.__keys)
+            if keyIn not in self.__keys:
+                if len(self.cache_data) == BaseCaching.MAX_ITEMS:
+                    keyOut = self.__keys.pop(keysLength - 1)
+                    self.cache_data.pop(keyOut)
+            else:
+                self.__keys.remove(keyIn)
+            self.__keys.insert(keysLength, keyIn)
+        return keyOut
