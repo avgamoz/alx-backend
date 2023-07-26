@@ -1,70 +1,54 @@
-#!/usr/bin/env python3
-""" 5. LFU Caching
+#!/usr/bin/python3
+"""LFU Cache Replacement Implementation Class
 """
-BaseCaching = __import__("base_caching").BaseCaching
+from threading import RLock
+
+BaseCaching = __import__('base_caching').BaseCaching
 
 
 class LFUCache(BaseCaching):
     """
-    FIFOCache defines a FIFO caching system
-    """
+    An implementaion of LFUCache(Least frequently used)
 
+    Attributes:
+        __stats (list): A dictionary of cache keys for access count
+        __rlock (RLock): Lock accessed resources to prevent race condition
+    """
     def __init__(self):
-        """
-        Initialize the class with the parent's init method
-        Attributes:
-                  usage: tracks how each key is called
-                  frequency: tracks how many times they are called
+        """ Instantiation method, sets instance attributes
         """
         super().__init__()
-        self.usage = []
-        self.frequency = {}
+        self.__stats = {}
+        self.__rlock = RLock()
 
     def put(self, key, item):
+        """ Add an item in the cache
         """
-        Cache a key-value pair
-        or just  return it if caching is not necessary
-        """
-        if key is None or item is None:
-            pass
-        else:
-            length = len(self.cache_data)
-            if length >= BaseCaching.MAX_ITEMS and key not in self.cache_data:
-                lfu = min(self.frequency.values())
-                lfu_keys = []
-                for k, v in self.frequency.items():
-                    if v == lfu:
-                        lfu_keys.append(k)
-                if len(lfu_keys) > 1:
-                    lru_lfu = {}
-                    for k in lfu_keys:
-                        lru_lfu[k] = self.usage.index(k)
-                    discard = min(lru_lfu.values())
-                    discard = self.usage[discard]
-                else:
-                    discard = lfu_keys[0]
-
-                print("DISCARD: {}".format(discard))
-                del self.cache_data[discard]
-                del self.usage[self.usage.index(discard)]
-                del self.frequency[discard]
-            # update usage frequency
-            if key in self.frequency:
-                self.frequency[key] += 1
-            else:
-                self.frequency[key] = 1
-            if key in self.usage:
-                del self.usage[self.usage.index(key)]
-            self.usage.append(key)
-            self.cache_data[key] = item
+        if key is not None and item is not None:
+            keyOut = self._balance(key)
+            with self.__rlock:
+                self.cache_data.update({key: item})
+            if keyOut is not None:
+                print('DISCARD: {}'.format(keyOut))
 
     def get(self, key):
+        """ Get an item by key
         """
-        Return the value linked to a key, or None
+        with self.__rlock:
+            value = self.cache_data.get(key, None)
+            if key in self.__stats:
+                self.__stats[key] += 1
+        return value
+
+    def _balance(self, keyIn):
+        """ Removes the earliest item from the cache at MAX size
         """
-        if key is not None and key in self.cache_data.keys():
-            del self.usage[self.usage.index(key)]
-            self.usage.append(key)
-            self.frequency[key] += 1
-            return self.cache_data[key]
-        return None
+        keyOut = None
+        with self.__rlock:
+            if keyIn not in self.__stats:
+                if len(self.cache_data) == BaseCaching.MAX_ITEMS:
+                    keyOut = min(self.__stats, key=self.__stats.get)
+                    self.cache_data.pop(keyOut)
+                    self.__stats.pop(keyOut)
+            self.__stats[keyIn] = self.__stats.get(keyIn, 0) + 1
+        return keyOut
