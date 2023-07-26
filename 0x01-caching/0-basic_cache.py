@@ -1,31 +1,23 @@
-#!/usr/bin/env python3
-""" 0. Basic dictionary
+#!/usr/bin/python3
+"""Basic Cache implementation Class
 """
-BaseCaching = __import__("base_caching").BaseCaching
+BaseCaching = __import__('base_caching').BaseCaching
 
 
 class BasicCache(BaseCaching):
-    """ a class that inherits from BaseCaching and is
-        a caching system.
-        Attributes:
-            key, item
-        Methods:
-            put(), get()
     """
+    A basic cache implementaion class
 
-    def _init_(self):
-        super()._init_()
-        self.cache_data = {}
-
+    Attributes:
+        MAX_ITEMS: number of items that can be store in the cache
+    """
     def put(self, key, item):
-        """ Assign key and item to the cache system """
-        if key is None or item is None:
-            pass
-        self.cache_data[key] = item
+        """ Add an item in the cache
+        """
+        if key is not None and item is not None:
+            self.cache_data.update({key: item})
 
     def get(self, key):
-        """ Get the value from the cache with key"""
-        if key is not None and key in self.cache_data:
-            return self.cache_data[key]
-        else:
-            return None
+        """ Get an item by key
+        """
+        return self.cache_data.get(key, None)
