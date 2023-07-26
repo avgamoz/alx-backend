@@ -1,17 +1,16 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 """ BaseCaching module
 """
 
-
 class BaseCaching():
-    """BaseCaching  defines:
-     - constants of your caching system
-     - where your data are stored (in a dictionary)
+    """ BaseCaching defines:
+      - constants of your caching system
+      - where your data are stored (in a dictionary)
     """
     MAX_ITEMS = 4
 
     def __init__(self):
-        """ Initialiaze
+        """ Initiliaze
         """
         self.cache_data = {}
 
@@ -25,11 +24,9 @@ class BaseCaching():
     def put(self, key, item):
         """ Add an item in the cache
         """
-        raise NotImplementedError(
-            "put must be implemented in your cache class")
+        raise NotImplementedError("put must be implemented in your cache class")
 
     def get(self, key):
         """ Get an item by key
         """
-        raise NotImplementedError(
-            "get must be implemented in your cache class")
+        raise NotImplementedError("get must be implemented in your cache class")
