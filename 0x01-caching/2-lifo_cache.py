@@ -1,38 +1,53 @@
 #!/usr/bin/python3
-""" 2. LIFO Caching
+"""LIFO Cache Replacement Implementation Class
 """
+from threading import RLock
 
-BaseCaching = __import__("base_caching").BaseCaching
+BaseCaching = __import__('base_caching').BaseCaching
 
 
 class LIFOCache(BaseCaching):
-    """ a class that inherits from BaseCaching and is
-    a caching system.
-    Arguments:
-            key, item
-    Methods:
-            get(), post()
+    """
+    An implementation of LIFO(Last In Fisrt Out) Cache
+
+    Attributes:
+        __keys (list): Stores cache keys in order of entry using `.append`
+        __rlock (RLock): Lock accessed resources to prevent race condition
     """
     def __init__(self):
-        """ initialize the class with the parent's init method
+        """ Instantiation method, sets instance attributes
         """
         super().__init__()
+        self.__keys = []
+        self.__rlock = RLock()
 
     def put(self, key, item):
-        """ assign to the dictionary self.cache_data the item value
-        for the key"""
-        if key or item is None:
-            pass
-        if len(self.cache_data) >= self.MAX_ITEMS:
-            last_key = list(self.cache_data.keys())[-1]
-            del self.cache_data[last_key]
-            print(f'DISCARD: {last_key}')
-        self.cache_data[key] = item
+        """ Add an item in the cache
+        """
+        if key is not None and item is not None:
+            keyOut = self._balance(key)
+            with self.__rlock:
+                self.cache_data.update({key: item})
+            if keyOut is not None:
+                print('DISCARD: {}'.format(keyOut))
 
     def get(self, key):
+        """ Get an item by key
         """
-        Get the values associated with the key
+        with self.__rlock:
+            return self.cache_data.get(key, None)
+
+    def _balance(self, keyIn):
+        """ Removes the earliest item from the cache at MAX size
         """
-        if key is None or key not in self.cache_data:
-            return None
-        return self.cache_data[key]
+        keyOut = None
+        with self.__rlock:
+            keysLength = len(self.__keys)
+            if keyIn not in self.__keys:
+                if len(self.cache_data) == BaseCaching.MAX_ITEMS:
+                    keyOut = self.__keys.pop(keysLength - 1)
+                    self.cache_data.pop(keyOut)
+            else:
+                self.__keys.remove(keyIn)
+            self.__keys.insert(keysLength, keyIn)
+        return keyOut
